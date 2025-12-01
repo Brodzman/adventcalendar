@@ -23,7 +23,7 @@
         .app-title {
             font-family: 'Great Vibes', cursive;
             color: var(--color-primary);
-            text-shadow: 2px 2px 0px var(--color-accent);
+            text-shadow: 2px 2px 2px var(--color-accent); /* Adjusted shadow for better visibility */
         }
         .door {
             transition: all 0.3s ease-in-out;
@@ -77,7 +77,7 @@
             font-size: 1.1rem;
             line-height: 1.2;
             text-align: center;
-            text-shadow: 0px 0px 3px black;
+            text-shadow: 0px 0px 3px rgba(0,0,0,0.1); /* Lighter shadow */
         }
         .gift-reveal {
             color: #ffaa00; /* Orange/Gold for gift */
@@ -148,7 +148,7 @@
             
             <!-- Status Message -->
             <div id="status-message" class="text-center mt-6 text-sm italic text-gray-600">
-                Initializing secure adventure tracking...
+                Attempting to connect to database...
             </div>
         </div>
 
@@ -243,8 +243,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 
@@ -255,9 +255,10 @@
         let userId = null;
         
         // --- IMPORTANT: MANUAL CONFIGURATION FOR GITHUB PAGES DEPLOYMENT ---
-        // REPLACE THE 'YOUR_...' PLACEHOLDERS BELOW WITH YOUR OWN FIREBASE PROJECT DETAILS.
-        // This is essential for saving progress outside of the Canvas environment.
-        const firebaseConfig = {
+        // 🚨🚨🚨 YOU MUST REPLACE THE 'YOUR_...' PLACEHOLDERS BELOW 🚨🚨🚨
+        // 1. Go to Firebase Console -> Your Project -> Project Settings -> Your Apps (Web)
+        // 2. Copy the key/value pairs from the 'firebaseConfig' object and paste them here.
+        const MANUAL_FIREBASE_CONFIG = {
             apiKey: "AIzaSyB27vs1MDDU7q-N9pnyj_RmT4DXJ2kApys",
             authDomain: "adventcalendar-c9408.firebaseapp.com",
             projectId: "adventcalendar-c9408",
@@ -269,10 +270,10 @@
         const FALLBACK_APP_ID = 'advent-calendar-v1'; // Used for the Firestore path if __app_id is missing
 
         // Determine which configuration source to use:
+        // Use the manual config if environment variables (__firebase_config) are not present.
         const FIREBASE_CONFIG = (typeof __firebase_config !== 'undefined' && JSON.parse(__firebase_config)?.projectId)
             ? JSON.parse(__firebase_config)
             : MANUAL_FIREBASE_CONFIG;
-        const INITIAL_AUTH_TOKEN = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         const APP_ID = typeof __app_id !== 'undefined' ? __app_id : FALLBACK_APP_ID;
 
         const ADVENT_DOC_PATH = (uid) => doc(db, 'artifacts', APP_ID, 'users', uid, 'advent_calendar', 'state');
@@ -353,23 +354,21 @@
                     const app = initializeApp(FIREBASE_CONFIG);
                     db = getFirestore(app);
                     auth = getAuth(app);
-
-                    // Since we are running outside the Canvas, we must use anonymous sign-in
-                    // (The INITIAL_AUTH_TOKEN provided by the Canvas is only valid here)
-                    await signInAnonymously(auth);
                     
-                    // Set up listener after successful sign-in
-                    onAuthStateChanged(auth, (user) => {
-                        if (user) {
-                            userId = user.uid;
-                            console.log("Firebase Auth Complete. User ID:", userId);
-                            isAuthReady = true;
-                            startDataListening();
-                        } else {
-                            console.error("Authentication failed after anonymous sign-in.");
-                            document.getElementById('status-message').textContent = "Error: Could not authenticate user.";
-                        }
-                    });
+                    document.getElementById('status-message').textContent = `Connecting to database...`;
+
+                    // FIX: Use synchronous anonymous sign-in and wait for it to resolve
+                    const userCredential = await signInAnonymously(auth);
+                    
+                    if (userCredential && userCredential.user) {
+                        userId = userCredential.user.uid;
+                        console.log("Firebase Auth Complete. User ID:", userId);
+                        isAuthReady = true;
+                        startDataListening();
+                    } else {
+                         throw new Error("Anonymous sign-in failed.");
+                    }
+                    
 
                 } catch (error) {
                     console.error("Error initializing Firebase:", error);
@@ -378,7 +377,8 @@
 
             } else {
                 console.warn("Firebase config missing. Using local, non-persistent state.");
-                document.getElementById('status-message').textContent = "Non-persistent Mode Active: Progress will be lost on refresh. (Insert your Firebase Config)";
+                // This is the message you saw on GitHub Pages when the config was missing.
+                document.getElementById('status-message').textContent = "Non-persistent Mode Active: Progress will be lost on refresh. 🚨 FIREBASE CONFIG KEYS MISSING 🚨";
                 isAuthReady = true;
                 renderCalendar(); // Render immediately in non-persistent mode
             }
@@ -401,7 +401,7 @@
                     finalAnswerSubmitted = false;
                     setDoc(docRef, { unlockedDays: [], finalAnswerSubmitted: false }, { merge: true }).catch(e => console.error("Error setting initial doc:", e));
                 }
-                document.getElementById('status-message').textContent = `Progress is **SAVED** (Tracking user: ${userId.substring(0, 8)}...)`;
+                document.getElementById('status-message').textContent = `Progress is SAVED (Tracking user: ${userId.substring(0, 8)}...)`;
                 renderCalendar();
             }, (error) => {
                 console.error("Error listening to Firestore:", error);
