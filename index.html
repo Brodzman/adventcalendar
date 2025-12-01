@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Georgina's Christmas Adventure</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use a nice festive font -->
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* Custom Christmas Theme Colors & Fonts */
+        :root {
+            --color-primary: #880000; /* Deep Red */
+            --color-secondary: #004d00; /* Forest Green */
+            --color-accent: #ffd700; /* Gold */
+        }
+        body {
+            background-color: #f7f3e8; /* Light Cream Background */
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+        .app-title {
+            font-family: 'Great Vibes', cursive;
+            color: var(--color-primary);
+            text-shadow: 2px 2px 0px var(--color-accent);
+        }
+        .door {
+            transition: all 0.3s ease-in-out;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            border: 4px solid var(--color-accent);
+            background-color: var(--color-primary);
+            color: white;
+            position: relative;
+            overflow: hidden;
+            aspect-ratio: 1 / 1;
+        }
+        .locked-content {
+            background-color: var(--color-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            line-height: 1;
+        }
+        .unlocked-content {
+            background-color: #ffffff;
+            color: var(--color-secondary);
+            padding: 0.5rem;
+            border: 2px dashed var(--color-secondary);
+            font-size: 0.8rem;
+            text-align: left;
+            overflow-y: auto;
+        }
+        .reveal-box {
+            font-weight: bold;
+            margin-top: 0.25rem;
+            padding-top: 0.25rem;
+            border-top: 1px solid #ddd;
+        }
+        .coupon-reveal {
+            color: var(--color-secondary);
+            font-size: 0.9rem;
+            text-shadow: 1px 1px 0px #eee;
+        }
+        .letter-reveal {
+            color: var(--color-primary);
+            font-size: 1.1rem;
+            text-transform: uppercase;
+        }
+        /* Custom styles for new content types */
+        .love-note-reveal {
+            font-family: 'Great Vibes', cursive;
+            color: #d10078; /* Pink/Rose for romance */
+            font-size: 1.1rem;
+            line-height: 1.2;
+            text-align: center;
+            text-shadow: 0px 0px 3px black;
+        }
+        .gift-reveal {
+            color: #ffaa00; /* Orange/Gold for gift */
+            font-weight: 900;
+            font-size: 0.9rem;
+            text-shadow: 1px 1px 0px #eee;
+        }
+        .modal-card {
+            background-color: white;
+            border: 4px solid var(--color-accent);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+        .btn-gold {
+            background-color: var(--color-accent);
+            color: var(--color-primary);
+            font-weight: bold;
+            transition: background-color 0.1s;
+        }
+        .btn-gold:hover {
+            background-color: #e5b800;
+        }
+        /* Lock icon style */
+        .lock-icon {
+            color: var(--color-accent);
+            opacity: 0.7;
+        }
+        .footer-message {
+            color: var(--color-secondary);
+            font-weight: 500;
+        }
+        .final-answer-input {
+            letter-spacing: 0.25rem;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div id="app" class="max-w-4xl mx-auto">
+        
+        <h1 class="app-title text-5xl md:text-6xl text-center mb-4 pt-4">
+            Georgina's Christmas Adventure
+        </h1>
+        <p class="text-center mb-6 footer-message">
+            Enter today's code and solve the riddle to unlock your daily surprise!
+        </p>
+
+        <!-- View Toggle Buttons -->
+        <div class="text-center mb-8">
+            <button id="view-calendar-btn" onclick="showView('calendar')" class="btn-gold px-6 py-2 rounded-lg mr-4 opacity-100">
+                🎄 Advent Calendar
+            </button>
+            <button id="view-vault-btn" onclick="showView('vault')" class="btn-gold px-6 py-2 rounded-lg opacity-70">
+                🗺️ View Collection
+            </button>
+        </div>
+
+        <!-- Main Calendar View -->
+        <div id="calendar-view">
+            <!-- Calendar Grid - UPDATED CLASSES FOR RESPONSIVENESS -->
+            <div id="calendar-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 md:gap-6 lg:gap-8">
+                <!-- Doors will be rendered here by JavaScript -->
+            </div>
+            
+            <!-- Final Reveal Box (Appears after Day 24 is unlocked/answered) -->
+            <div id="final-reveal-box" class="hidden p-6 bg-white rounded-xl shadow-2xl border-4 border-yellow-500 mt-8 text-center">
+                <!-- Final reveal content will be inserted here -->
+            </div>
+            
+            <!-- Status Message -->
+            <div id="status-message" class="text-center mt-6 text-sm italic text-gray-600">
+                Initializing secure adventure tracking...
+            </div>
+        </div>
+
+        <!-- New Clue Vault View -->
+        <div id="vault-view" class="hidden">
+            <h2 class="text-4xl font-bold text-center app-title mb-6 text-green-700">The Clue Vault (Collected Items)</h2>
+            <div id="vault-content" class="bg-white p-6 rounded-xl shadow-lg border-2 border-green-700">
+                <!-- Vault content rendered here by JavaScript -->
+            </div>
+        </div>
+
+
+        <!-- Hidden Modal for Code Input/Riddle Answer (Two Stages) -->
+        <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+            <div class="modal-card p-6 rounded-xl w-11/12 max-w-sm">
+                <h3 id="modal-title" class="text-2xl font-bold text-center mb-4 text-gray-800">Unlock Day X</h3>
+                
+                <!-- STAGE 1: CODE INPUT (Visible initially) -->
+                <div id="code-stage">
+                    <p class="text-sm text-center mb-2 text-gray-600">Enter the secret code found in today's box:</p>
+                    <input type="text" id="code-input-field" placeholder="Enter Code" maxlength="6"
+                           class="w-full p-3 mb-4 text-center text-xl tracking-wide border-2 border-gray-300 rounded-lg focus:border-red-600 focus:ring focus:ring-red-200">
+                </div>
+
+                <!-- STAGE 2: RIDDLE ANSWER (Hidden initially) -->
+                <div id="riddle-stage" class="hidden">
+                    <p class="text-sm text-center mb-4 text-gray-600">Now, solve the riddle for Day <span id="riddle-day-number" class="font-bold">X</span>:</p>
+                    <div id="riddle-text" class="text-center text-md font-semibold italic p-3 mb-4 bg-gray-100 rounded-lg border border-gray-300">Riddle goes here...</div>
+                    <p class="text-sm text-center mb-2 text-gray-600">Enter the answer below:</p>
+                    <input type="text" id="answer-input-field" placeholder="Enter Answer"
+                           class="w-full p-3 mb-4 text-center text-xl tracking-wide border-2 border-gray-300 rounded-lg focus:border-red-600 focus:ring focus:ring-red-200">
+                </div>
+                
+                <!-- Error and Buttons -->
+                <p id="modal-error" class="text-red-500 text-sm mb-4 hidden text-center"></p>
+                
+                <div class="flex justify-end space-x-3">
+                    <button onclick="closeModal()" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+                        Cancel
+                    </button>
+                    <button onclick="submitInput()" id="submit-button" class="btn-gold px-4 py-2 rounded-lg">
+                        Submit Code
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden Final Question Modal for Day 24 -->
+        <div id="final-question-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+            <div class="modal-card p-6 rounded-xl w-11/12 max-w-lg">
+                <h3 class="text-3xl font-bold text-center mb-4 text-red-700">The Ultimate Question!</h3>
+                <p class="text-lg text-gray-700 mb-6 text-center">You have collected all 6 characters of the secret city name. Now, use them to answer this question:</p>
+                
+                <div id="final-clue-hint-modal" class="text-xl font-mono text-green-700 mb-6 p-2 bg-green-50 rounded-lg text-center font-extrabold">
+                    <!-- Clue letters will be inserted here as a hint -->
+                </div>
+
+                <p class="text-xl font-semibold mb-4 text-gray-800 text-center">What is the surprise event happening on June 27, 2026?</p>
+                
+                <div class="space-y-3 mb-6">
+                    <label class="block bg-gray-100 p-3 rounded-lg hover:bg-red-50 cursor-pointer transition">
+                        <input type="radio" name="final_choice" value="wedding_anniversary" class="mr-2 accent-red-600">
+                        Our Wedding Anniversary
+                    </label>
+                    <label class="block bg-gray-100 p-3 rounded-lg hover:bg-red-50 cursor-pointer transition">
+                        <input type="radio" name="final_choice" value="live_orchestra" class="mr-2 accent-red-600">
+                        A How to Train Your Dragon Live Orchestra Concert
+                    </label>
+                    <label class="block bg-gray-100 p-3 rounded-lg hover:bg-red-50 cursor-pointer transition">
+                        <input type="radio" name="final_choice" value="sydney_marathon" class="mr-2 accent-red-600">
+                        The Sydney Marathon
+                    </label>
+                    <label class="block bg-gray-100 p-3 rounded-lg hover:bg-red-50 cursor-pointer transition">
+                        <input type="radio" name="final_choice" value="trip_to_melbourne" class="mr-2 accent-red-600">
+                        A trip to Melbourne (The original decoy!)
+                    </label>
+                </div>
+
+                <p id="final-modal-error" class="text-red-500 text-sm mb-4 hidden text-center"></p>
+
+                <div class="flex justify-end space-x-3">
+                    <button onclick="closeFinalQuestionModal()" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+                        Cancel
+                    </button>
+                    <button onclick="submitFinalChoice()" class="btn-gold px-8 py-3 rounded-lg text-xl">
+                        Solve the Puzzle!
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+
+        setLogLevel('Debug'); // Enable Firestore logging
+
+        let db;
+        let auth;
+        let userId = null;
+        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const FIREBASE_CONFIG = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const INITIAL_AUTH_TOKEN = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const ADVENT_DOC_PATH = (uid) => doc(db, 'artifacts', APP_ID, 'users', uid, 'advent_calendar', 'state');
+        
+        // Final phrase is now SYDNEY (6 characters)
+        const FINAL_PHRASE_HINT = "SYDNEY"; 
+        const CORRECT_FINAL_ANSWER = "live_orchestra";
+
+        // State
+        let unlockedDays = [];
+        let isAuthReady = false;
+        let selectedDay = null;
+        let modalStage = 'code'; // 'code', 'answer', 'final_code_check'
+        let finalAnswerSubmitted = false;
+
+        // --- Data Structure for Riddles (24 Days for SYDNEY Surprise) ---
+        // LETTERS FOR SYDNEY ARE SCRAMBLED: E, Y, S, D, N, Y (6 CLUE days)
+        const calendarData = [
+            // Day 1: CLUE (E) - New Position
+            { day: 1, code: '1201', answer: 'MAP', riddle: "What has cities, but no houses. Mountains, but no trees. Water, but no fish?", reveal: "Clue 1 (E): The letter found in the word 'Destination'.", type: 'CLUE', value: 'E' },
+            // Day 2: COUPON
+            { day: 2, code: '5466', answer: 'DARKNESS', riddle: "The more of me there is, the less you can see.", reveal: "COUPON: This is good for one home-cooked meal of your choice", type: 'COUPON', value: null },
+            // Day 3: LOVE NOTE
+            { day: 3, code: '7855', answer: 'ROAD', riddle: "I am always traveling, but never move. What am I?", reveal: "LOVE NOTE: INSERT", type: 'LOVE NOTE', value: null },
+            // Day 4: GIFT UNLOCKED
+            { day: 4, code: '5423', answer: 'FUTURE', riddle: "What is always in front of you but can’t be seen?", reveal: "GIFT UNLOCKED: Your fun travel accessory is waiting by the sofa!", type: 'GIFT UNLOCKED', value: null },
+            // Day 5: CLUE (Y) - New Position
+            { day: 5, code: '4585', answer: 'TOOTHLESS', riddle: "HTTYD Clue: The first letter of Hiccup’s dragon’s name.", reveal: "Clue 2 (Y): The letter that is both a vowel and a consonant.", type: 'CLUE', value: 'Y' },
+            // Day 6: COUPON
+            { day: 6, code: '6781', answer: 'HARBOUR', riddle: "I am famous for my sails and my bridge. I host a massive New Year's fireworks show.", reveal: "COUPON: You get to choose **what music we listen to** for the rest of the day.", type: 'COUPON', value: null },
+            // Day 7: LOVE NOTE
+            { day: 7, code: '2213', answer: 'GLOVE', riddle: "What has a thumb and four fingers, but is not alive?", reveal: "LOVE NOTE: I admire your intelligence and curiosity about the world.", type: 'LOVE NOTE', value: null },
+            // Day 8: GIFT UNLOCKED
+            { day: 8, code: '5786', answer: 'ANCHOR', riddle: "What do sailors drop to keep a ship secure?", reveal: "GIFT UNLOCKED: Open the drawer in the kitchen.", type: 'GIFT UNLOCKED', value: null },
+            // Day 9: COUPON
+            { day: 9, code: '6542', answer: 'BERK', riddle: "HTTYD Clue: The name of Hiccup's island village.", reveal: "COUPON: Valid for **unlimited cuddles** for the next 24 hours.", type: 'COUPON', value: null },
+            // Day 10: CLUE (S) - New Position
+            { day: 10, code: '1238', answer: 'CANBERRA', riddle: "What Australian capital city is directly north of the geographic center of the state of NSW?", reveal: "Clue 3 (S): The letter that starts 'Surprise'.", type: 'CLUE', value: 'S' },
+            // Day 11: LOVE NOTE
+            { day: 11, code: '3588', answer: 'SPONGE', riddle: "What is full of holes but still holds water?", reveal: "LOVE NOTE: I love your fierce compassion for others.", type: 'LOVE NOTE', value: null },
+            // Day 12: GIFT UNLOCKED
+            { day: 12, code: '8865', answer: 'N', riddle: "I am an invisible barrier only visible when breached. What am I? (Hint: Think walls)", reveal: "GIFT UNLOCKED: Your new cozy item is waiting on the bed!", type: 'GIFT UNLOCKED', value: null },
+            // Day 13: COUPON
+            { day: 13, code: '1536', answer: 'HOW', riddle: "HTTYD Clue: The first word of the movie title.", reveal: "COUPON: This entitles you to **a bubble bath** prepared by me.", type: 'COUPON', value: null },
+            // Day 14: LOVE NOTE
+            { day: 14, code: '6678', answer: 'ASLEEP', riddle: "What question can you never answer yes to? (Are you... yet?)", reveal: "LOVE NOTE: I feel safest and happiest when I'm next to you.", type: 'LOVE NOTE', value: null },
+            // Day 15: CLUE (D) - New Position
+            { day: 15, code: '5845', answer: 'TOMORROW', riddle: "I am always coming, but never arrive. What am I?", reveal: "Clue 4 (D): The letter that starts 'Dragon'.", type: 'CLUE', value: 'D' },
+            // Day 16: GIFT UNLOCKED
+            { day: 16, code: '5621', answer: 'E', riddle: "I am at the end of time and space, but in the middle of everywhere. What letter am I?", reveal: "GIFT UNLOCKED: Look in the closet behind my jacket!", type: 'GIFT UNLOCKED', value: null },
+            // Day 17: COUPON
+            { day: 17, code: '3554', answer: 'NADDER', riddle: "HTTYD Clue: Astrid’s dragon, Stormfly, is what species?", reveal: "COUPON: Valid for **one emergency snack run**—no matter the time!", type: 'COUPON', value: null },
+            // Day 18: LOVE NOTE
+            { day: 18, code: '3254', answer: 'NSW', riddle: "The Australian state where our final destination is located. (Three letters only)", reveal: "LOVE NOTE: I cherish our memories together and look forward to the future.", type: 'LOVE NOTE', value: null },
+            // Day 19: GIFT UNLOCKED
+            { day: 19, code: '8763', answer: 'BOTTLE', riddle: "I have a neck but no head. What am I?", reveal: "GIFT UNLOCKED: Check your shoes by the front door!", type: 'GIFT UNLOCKED', value: null },
+            // Day 20: CLUE (N) - New Position
+            { day: 20, code: '2165', answer: 'Y', riddle: "I am a vowel that sometimes acts like a consonant, and the final letter of our mystery destination. What letter am I?", reveal: "Clue 5 (N): Found in the middle of the word 'Jeu**N**e'.", type: 'CLUE', value: 'N' },
+            // Day 21: COUPON
+            { day: 21, code: '1589', answer: 'BLACK', riddle: "HTTYD Clue: The color of Toothless the Night Fury.", reveal: "COUPON: We're having **dessert for dinner** tonight!", type: 'COUPON', value: null },
+            // Day 22: LOVE NOTE
+            { day: 22, code: '1453', answer: 'EGG', riddle: "What has to be broken before you can use it?", reveal: "LOVE NOTE: I promise to always be your biggest fan and supporter.", type: 'LOVE NOTE', value: null },
+            // Day 23: CLUE (Y) - New Position
+            { day: 23, code: '1532', answer: 'PROMISE', riddle: "You keep me only after giving me away. What am I?", reveal: "Clue 6 (Y): The final letter of our destination city.", type: 'CLUE', value: 'Y' },
+            // Day 24: FINAL REVEAL (Unlocked by 'SYDNEY' code and final choice)
+            { day: 24, code: 'SYDNEY', answer: CORRECT_FINAL_ANSWER, riddle: "THE GRAND FINALE! What is the surprise event happening on June 27, 2026?", type: 'final', value: 'Final' },
+        ];
+
+
+        // --- Firebase Initialization and Auth ---
+
+        async function initFirebase() {
+            try {
+                if (Object.keys(FIREBASE_CONFIG).length > 0) {
+                    const app = initializeApp(FIREBASE_CONFIG);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+
+                    // Sign in using the provided token or anonymously
+                    if (INITIAL_AUTH_TOKEN) {
+                        await signInWithCustomToken(auth, INITIAL_AUTH_TOKEN);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    
+                    // Set up listener after successful sign-in
+                    onAuthStateChanged(auth, (user) => {
+                        if (user) {
+                            userId = user.uid;
+                            console.log("Firebase Auth Complete. User ID:", userId);
+                            isAuthReady = true;
+                            startDataListening();
+                        } else {
+                            console.error("Authentication failed.");
+                            document.getElementById('status-message').textContent = "Error: Could not authenticate user.";
+                        }
+                    });
+
+                } else {
+                    console.warn("Firebase config missing. Using local, non-persistent state.");
+                    document.getElementById('status-message').textContent = "Non-persistent Mode Active: Progress will be lost on refresh.";
+                    isAuthReady = true;
+                    renderCalendar(); // Render immediately in non-persistent mode
+                }
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+                document.getElementById('status-message').textContent = `Error during initialization: ${error.message}`;
+            }
+        }
+
+        function startDataListening() {
+            if (!db || !userId) return;
+
+            const docRef = ADVENT_DOC_PATH(userId);
+            
+            onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    unlockedDays = data.unlockedDays || [];
+                    finalAnswerSubmitted = data.finalAnswerSubmitted || false;
+                    console.log("State loaded:", unlockedDays, "Final submitted:", finalAnswerSubmitted);
+                } else {
+                    // Initialize if document does not exist
+                    unlockedDays = [];
+                    finalAnswerSubmitted = false;
+                    setDoc(docRef, { unlockedDays: [], finalAnswerSubmitted: false }, { merge: true }).catch(e => console.error("Error setting initial doc:", e));
+                }
+                document.getElementById('status-message').textContent = `Tracking progress for user: ${userId.substring(0, 8)}...`;
+                renderCalendar();
+            }, (error) => {
+                console.error("Error listening to Firestore:", error);
+                document.getElementById('status-message').textContent = `Error loading progress: ${error.message}`;
+            });
+        }
+
+
+        // --- View Switching Logic ---
+
+        window.showView = (viewName) => {
+            const calendarView = document.getElementById('calendar-view');
+            const vaultView = document.getElementById('vault-view');
+            const calendarBtn = document.getElementById('view-calendar-btn');
+            const vaultBtn = document.getElementById('view-vault-btn');
+
+            if (viewName === 'calendar') {
+                calendarView.classList.remove('hidden');
+                vaultView.classList.add('hidden');
+                calendarBtn.classList.remove('opacity-70');
+                calendarBtn.classList.add('opacity-100'); 
+                vaultBtn.classList.add('opacity-70');
+                
+                // Final Reveal visibility based on state
+                const finalRevealBox = document.getElementById('final-reveal-box');
+                
+                if (finalAnswerSubmitted) {
+                    displayFinalReveal();
+                } else {
+                    finalRevealBox.classList.add('hidden');
+                }
+                
+            } else if (viewName === 'vault') {
+                calendarView.classList.add('hidden');
+                vaultView.classList.remove('hidden');
+                calendarBtn.classList.add('opacity-70');
+                vaultBtn.classList.remove('opacity-70');
+                vaultBtn.classList.add('opacity-100'); 
+                renderClueVault(); // Render vault content when switching to it
+            }
+        };
+
+
+        // --- Rendering Logic ---
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+            
+            calendarData.forEach(data => {
+                const day = data.day;
+                const isUnlocked = unlockedDays.includes(day);
+                
+                const door = document.createElement('div');
+                door.className = 'door flex items-center justify-center rounded-lg';
+                door.setAttribute('data-day', day);
+
+                if (isUnlocked) {
+                    let revealTitle;
+                    let revealContent;
+                    let contentClass;
+                    
+                    if (data.type === 'final') {
+                         // Day 24, once solved, shows the final clue hint for context
+                        const finalHint = aggregateLetters(true);
+                        door.innerHTML = `
+                            <div class="unlocked-content p-3 w-full h-full rounded-md shadow-inner flex flex-col justify-between items-center text-center">
+                                <p class="font-bold text-lg mb-1 text-red-700">Day 24 - SOLVED!</p>
+                                <p class="text-sm italic">Final Puzzle Answer Confirmed!</p>
+                                <div class="reveal-box mt-2">
+                                    <span class="font-bold text-sm text-gray-700">FINAL CODE:</span> 
+                                    <p class="text-lg font-extrabold text-red-800">${finalHint}</p>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        // Regular unlocked days (CLUE, COUPON, LOVE NOTE, GIFT UNLOCKED)
+                        
+                        // --- UPDATED: Display 'FINAL CODE' instead of 'CLUE' ---
+                        revealTitle = data.type === 'CLUE' ? 'FINAL CODE' : data.type; 
+                        
+                        if (data.type === 'CLUE') {
+                            revealContent = data.value;
+                            contentClass = 'text-6xl font-extrabold text-red-800 tracking-wider leading-none';
+                        } else if (data.type === 'COUPON') {
+                            revealContent = data.reveal.replace('COUPON: ', '');
+                            contentClass = 'text-base font-extrabold text-green-700 leading-tight coupon-reveal';
+                        } else if (data.type === 'LOVE NOTE') {
+                            revealContent = data.reveal.replace('LOVE NOTE: ', '');
+                            contentClass = 'love-note-reveal text-base';
+                        } else if (data.type === 'GIFT UNLOCKED') {
+                            revealContent = data.reveal.replace('GIFT UNLOCKED: ', '');
+                            // Just show "GIFT UNLOCKED" on the face, the message is in the vault
+                            revealContent = "GIFT UNLOCKED"; 
+                            contentClass = 'gift-reveal text-xl';
+                        }
+                        
+                        door.innerHTML = `
+                            <div class="unlocked-content p-3 w-full h-full rounded-md shadow-inner flex flex-col justify-center items-center text-center">
+                                <p class="text-xs font-semibold uppercase text-gray-500 mb-1">Day ${day}</p>
+                                <div class="${contentClass} flex items-center justify-center h-full w-full">
+                                    ${revealContent}
+                                </div>
+                                <p class="text-xs font-bold text-gray-700 mt-1">${revealTitle}</p>
+                            </div>
+                        `;
+                    }
+                } else {
+                    door.innerHTML = `
+                        <div class="locked-content w-full h-full rounded-md flex flex-col space-y-2">
+                            <span>${day}</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="lock-icon h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2h2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2h2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                    `;
+                    door.onclick = () => {
+                        if (day === 24 && !finalAnswerSubmitted) {
+                            openModal(day); // Day 24 uses the main modal for the 'SYDNEY' code check
+                        } else {
+                            openModal(day);
+                        }
+                    };
+                }
+
+                grid.appendChild(door);
+            });
+            
+            showView('calendar'); // Ensure the calendar is the default view on load
+        }
+        
+        // Helper function to aggregate collected letters for the final hint
+        function aggregateLetters(fullReveal = false) {
+            let aggregated = FINAL_PHRASE_HINT.split('').map(char => '_');
+            let hint = '';
+            
+            // Only aggregate letters up to Day 23
+            const daysToConsider = fullReveal ? 23 : Math.max(...unlockedDays.filter(d => d !== 24));
+            
+            calendarData.forEach(data => {
+                // Ensure we only look at unlocked CLUE days up to the current progress
+                if (data.type === 'CLUE' && unlockedDays.includes(data.day) && data.day <= daysToConsider) {
+                    const char = data.value;
+                    let foundIndex = -1;
+                    
+                    // Iterate through the target phrase to find the character's unique position
+                    for (let i = 0; i < FINAL_PHRASE_HINT.length; i++) {
+                        if (FINAL_PHRASE_HINT.charAt(i).toLowerCase() === char.toLowerCase()) {
+                            // Only fill the first available '_' slot for this character
+                            if (aggregated[i] === '_') {
+                                foundIndex = i;
+                                break; 
+                            }
+                        }
+                    }
+                    
+                    if (foundIndex !== -1) {
+                        aggregated[foundIndex] = char.toUpperCase();
+                    }
+                }
+            });
+            
+            // If all CLUE days are unlocked, ensure the whole phrase is visible in the hint
+            if (fullReveal || (unlockedDays.filter(d => calendarData.find(cd => cd.day === d && cd.type === 'CLUE')).length === 6 && unlockedDays.includes(23))) {
+                 for (let i = 0; i < FINAL_PHRASE_HINT.length; i++) {
+                    if (aggregated[i] === '_') {
+                        aggregated[i] = FINAL_PHRASE_HINT.charAt(i).toUpperCase();
+                    }
+                }
+            }
+            
+            // Format the hint string: S Y D N E Y
+            hint = aggregated.join(' ');
+
+            // Replace remaining underscores with question marks for visual clarity
+            hint = hint.replace(/_/g, '?');
+
+            return hint;
+        }
+
+        // --- Clue Vault Rendering ---
+        
+        function renderClueVault() {
+            const vaultContent = document.getElementById('vault-content');
+            vaultContent.innerHTML = '';
+
+            const collectedItems = calendarData
+                .filter(data => unlockedDays.includes(data.day) && data.day !== 24)
+                .sort((a, b) => a.day - b.day);
+
+            if (collectedItems.length === 0) {
+                vaultContent.innerHTML = '<p class="text-center text-gray-500 italic p-4">The vault is empty! Unlock some doors to start collecting your FINAL CODEs and coupons.</p>';
+                return;
+            }
+
+            let htmlContent = '';
+
+            collectedItems.forEach(item => {
+                let typeIcon = '🎁';
+                let itemClass = 'bg-gray-100 border-gray-300';
+                let revealText = item.reveal.replace(/\*\*/g, ''); 
+                
+                // --- Display 'FINAL CODE' instead of 'CLUE' ---
+                let typeText = item.type === 'CLUE' ? 'FINAL CODE' : item.type;
+                
+                if (item.type === 'CLUE') {
+                    typeIcon = '🗺️';
+                    itemClass = 'bg-red-50 border-red-300';
+                    revealText = `LETTER CLUE: ${item.value} (${item.reveal})`;
+                } else if (item.type === 'COUPON') {
+                    typeIcon = '💌';
+                    itemClass = 'bg-green-50 border-green-300';
+                } else if (item.type === 'LOVE NOTE') {
+                    typeIcon = '❤️';
+                    itemClass = 'bg-pink-50 border-pink-300';
+                    revealText = item.reveal;
+                } else if (item.type === 'GIFT UNLOCKED') {
+                    typeIcon = '📦';
+                    itemClass = 'bg-yellow-50 border-yellow-300';
+                    revealText = item.reveal;
+                }
+                
+                htmlContent += `
+                    <div class="p-4 mb-4 rounded-lg border-l-4 ${itemClass} shadow-sm flex items-start space-x-3">
+                        <div class="text-2xl">${typeIcon}</div>
+                        <div class="flex-grow">
+                            <p class="text-xs font-semibold uppercase text-gray-500">${typeText} - Day ${item.day}</p>
+                            <p class="text-lg font-bold text-gray-800">${revealText}</p>
+                            <p class="text-sm italic text-gray-600 mt-1">Riddle: ${item.riddle}</p>
+                        </div>
+                    </div>
+                `;
+            });
+
+            vaultContent.innerHTML = htmlContent;
+        }
+
+
+        function displayFinalReveal() {
+            const finalRevealBox = document.getElementById('final-reveal-box');
+            finalRevealBox.classList.remove('hidden');
+            
+            // Format the phrase for display: S Y D N E Y
+            const displayPhrase = aggregateLetters(true);
+
+            const revealContent = `
+                <h2 class="text-4xl app-title mb-4">The Grand Finale!</h2>
+                <p class="text-xl text-gray-700 mb-4">You have done it! You solved the ultimate puzzle, revealing the location:</p>
+                <div class="text-5xl font-extrabold my-6 text-red-600 tracking-widest">${displayPhrase}</div>
+                <p class="text-2xl font-bold text-green-700 mb-4">The Surprise Concert is in:</p>
+                <p class="text-6xl font-extrabold text-red-800 tracking-widest animate-bounce">SYDNEY</p>
+                <p class="mt-4 text-gray-800 text-lg">And the date is **27th June 2026**! I can't wait to see the orchestra with you!</p>
+             `;
+             finalRevealBox.innerHTML = revealContent;
+        }
+
+        // --- Modal Control ---
+
+        window.openModal = (day) => {
+            selectedDay = day;
+            const data = calendarData.find(d => d.day === day);
+            const errorElement = document.getElementById('modal-error');
+            const codeInputField = document.getElementById('code-input-field');
+            const submitButton = document.getElementById('submit-button');
+
+            // Reset modal state
+            modalStage = 'code';
+            document.getElementById('modal-title').textContent = `Unlock Day ${day}`;
+            document.getElementById('riddle-day-number').textContent = day;
+            document.getElementById('riddle-text').textContent = data.riddle;
+            codeInputField.value = '';
+            document.getElementById('answer-input-field').value = ''; 
+            errorElement.classList.add('hidden');
+
+            // --- 1. SEQUENTIAL UNLOCK CHECK ---
+            if (day > 1 && !unlockedDays.includes(day - 1)) {
+                errorElement.textContent = `You must unlock Day ${day - 1} first before proceeding to today's riddle!`;
+                errorElement.classList.remove('hidden');
+                submitButton.textContent = 'OK';
+                codeInputField.classList.add('hidden');
+                document.getElementById('code-stage').querySelector('p').classList.add('hidden');
+                document.getElementById('modal').classList.remove('hidden');
+                return;
+            }
+
+
+            // Handle Day 24 (Final Puzzle Unlock)
+            if (day === 24) {
+                // If Day 23 is unlocked (guaranteed by the check above), set for 'SYDNEY' code entry
+                modalStage = 'final_code_check';
+                document.getElementById('code-stage').querySelector('p').classList.remove('hidden');
+                document.getElementById('code-stage').querySelector('p').textContent = "Enter the unscrambled special final code to access the question:";
+                codeInputField.setAttribute('placeholder', 'Enter Code');
+                codeInputField.setAttribute('maxlength', 6);
+                codeInputField.classList.remove('hidden');
+                submitButton.textContent = 'Unlock Final Question';
+            } else {
+                // Handle Regular Days
+                modalStage = 'code';
+                document.getElementById('code-stage').querySelector('p').textContent = "Enter the secret code found in today's box:";
+                codeInputField.setAttribute('placeholder', 'Enter Code');
+                codeInputField.setAttribute('maxlength', 4);
+                codeInputField.classList.remove('hidden');
+                document.getElementById('code-stage').querySelector('p').classList.remove('hidden');
+                submitButton.textContent = 'Submit Code';
+            }
+            
+            // Show Code Stage, Hide Riddle Stage
+            document.getElementById('code-stage').classList.remove('hidden');
+            document.getElementById('riddle-stage').classList.add('hidden');
+
+            document.getElementById('modal').classList.remove('hidden');
+            codeInputField.focus();
+        }
+
+        window.closeModal = () => {
+            document.getElementById('modal').classList.add('hidden');
+            selectedDay = null;
+        }
+
+        // --- Final Question Modal Control (Separate from Main Modal) ---
+        
+        window.openFinalQuestionModal = () => {
+            // Check if all previous days are unlocked (This step prevents cheating via direct function call)
+             for (let i = 1; i <= 23; i++) {
+                if (!unlockedDays.includes(i)) return; 
+            }
+            
+            // All days unlocked, proceed with final puzzle
+            document.getElementById('final-clue-hint-modal').textContent = aggregateLetters(true);
+            
+            // Clear previous errors and inputs
+            document.getElementById('final-modal-error').classList.add('hidden');
+            document.querySelectorAll('input[name="final_choice"]').forEach(radio => radio.checked = false);
+
+            document.getElementById('final-question-modal').classList.remove('hidden');
+        }
+
+        window.closeFinalQuestionModal = () => {
+            document.getElementById('final-question-modal').classList.add('hidden');
+        }
+
+        window.submitFinalChoice = async () => {
+            const selectedRadio = document.querySelector('input[name="final_choice"]:checked');
+            const errorElement = document.getElementById('final-modal-error');
+            errorElement.classList.add('hidden');
+
+            if (!selectedRadio) {
+                errorElement.textContent = "Please select an answer!";
+                errorElement.classList.remove('hidden');
+                return;
+            }
+
+            if (selectedRadio.value === CORRECT_FINAL_ANSWER) {
+                await unlockDay(24, true); // Unlock day 24 and mark final answer as submitted
+                closeFinalQuestionModal();
+            } else {
+                errorElement.textContent = "Incorrect answer. The puzzle is close to your heart - try again!";
+                errorElement.classList.remove('hidden');
+            }
+        }
+
+
+        // Combined submission logic for both stages
+        window.submitInput = () => {
+            const day = selectedDay;
+            if (!day) return;
+
+            const errorElement = document.getElementById('modal-error');
+            const data = calendarData.find(d => d.day === day);
+            const codeInputField = document.getElementById('code-input-field');
+            errorElement.classList.add('hidden');
+
+            if (modalStage === 'code') {
+                // --- STAGE 1: CODE VALIDATION (Days 1-23) ---
+                const input = codeInputField.value.trim();
+                const expectedCode = data.code.trim(); 
+                
+                if (input === expectedCode) {
+                    // Code is correct, advance to Riddle stage
+                    modalStage = 'answer';
+                    document.getElementById('code-stage').classList.add('hidden');
+                    document.getElementById('riddle-stage').classList.remove('hidden');
+                    document.getElementById('submit-button').textContent = 'Reveal Surprise';
+                    document.getElementById('answer-input-field').focus();
+
+                } else {
+                    errorElement.textContent = "Incorrect code. Please check the box again.";
+                    errorElement.classList.remove('hidden');
+                }
+
+            } else if (modalStage === 'answer') {
+                // --- STAGE 2: RIDDLE ANSWER VALIDATION (Days 1-23) ---
+                const input = document.getElementById('answer-input-field').value.trim().toLowerCase();
+                const expectedAnswer = data.answer.trim().toLowerCase();
+                
+                if (input === expectedAnswer) {
+                    // Answer is correct, unlock the day
+                    unlockDay(day);
+                    closeModal();
+                } else {
+                    errorElement.textContent = "Incorrect answer. Try again!";
+                    errorElement.classList.remove('hidden');
+                }
+            } else if (modalStage === 'final_code_check') {
+                // --- STAGE 0: FINAL CODE CHECK (Day 24 only) ---
+                const input = codeInputField.value.trim().toLowerCase();
+                const expectedCode = data.code.toLowerCase();
+                
+                if (input === expectedCode) {
+                    // Correct code ('sydney'), open the final multi-choice question
+                    closeModal();
+                    openFinalQuestionModal();
+                } else {
+                    errorElement.textContent = "Incorrect final code. You must type the name of the destination city!";
+                    errorElement.classList.remove('hidden');
+                }
+            }
+        }
+
+
+        // --- Firestore Update Logic ---
+
+        async function unlockDay(day, isFinalSubmit = false) {
+            if (!isAuthReady) {
+                console.error("Authentication not ready. Cannot save data.");
+                document.getElementById('status-message').textContent = "Error: App is still initializing. Please wait a moment and try again.";
+                return;
+            }
+
+            let newUnlockedDays = [...unlockedDays];
+            let newFinalAnswerSubmitted = finalAnswerSubmitted;
+
+            if (!newUnlockedDays.includes(day)) {
+                newUnlockedDays.push(day);
+                newUnlockedDays.sort((a, b) => a - b);
+            }
+            
+            if (isFinalSubmit) {
+                newFinalAnswerSubmitted = true;
+                // If it's the final day, Day 24 is automatically unlocked by this flag
+                if (!newUnlockedDays.includes(24)) newUnlockedDays.push(24);
+            }
+
+            if (db && userId) {
+                try {
+                    const docRef = ADVENT_DOC_PATH(userId);
+                    const updateData = { 
+                        unlockedDays: newUnlockedDays, 
+                        finalAnswerSubmitted: newFinalAnswerSubmitted 
+                    };
+                    await setDoc(docRef, updateData, { merge: true });
+                    console.log(`Successfully updated state. Day ${day} unlocked: ${!isFinalSubmit}. Final submitted: ${isFinalSubmit}.`);
+                } catch (e) {
+                    console.error("Error updating document:", e);
+                    document.getElementById('status-message').textContent = "Error saving progress. Please try again or refresh.";
+                }
+            } else {
+                // Non-persistent mode update
+                unlockedDays = newUnlockedDays;
+                finalAnswerSubmitted = newFinalAnswerSubmitted;
+                renderCalendar();
+            }
+        }
+
+        // Initialize the application
+        window.onload = initFirebase;
+
+    </script>
+</body>
+</html>
