@@ -253,9 +253,28 @@
         let db;
         let auth;
         let userId = null;
-        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const FIREBASE_CONFIG = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        
+        // --- IMPORTANT: MANUAL CONFIGURATION FOR GITHUB PAGES DEPLOYMENT ---
+        // REPLACE THE 'YOUR_...' PLACEHOLDERS BELOW WITH YOUR OWN FIREBASE PROJECT DETAILS.
+        // This is essential for saving progress outside of the Canvas environment.
+        const firebaseConfig = {
+            apiKey: "AIzaSyB27vs1MDDU7q-N9pnyj_RmT4DXJ2kApys",
+            authDomain: "adventcalendar-c9408.firebaseapp.com",
+            projectId: "adventcalendar-c9408",
+            storageBucket: "adventcalendar-c9408.firebasestorage.app",
+            messagingSenderId: "916652328272",
+            appId: "1:916652328272:web:0d97ac1860eea7cfbc9855",
+            measurementId: "G-Y72XSSZ57K"
+        };
+        const FALLBACK_APP_ID = 'advent-calendar-v1'; // Used for the Firestore path if __app_id is missing
+
+        // Determine which configuration source to use:
+        const FIREBASE_CONFIG = (typeof __firebase_config !== 'undefined' && JSON.parse(__firebase_config)?.projectId)
+            ? JSON.parse(__firebase_config)
+            : MANUAL_FIREBASE_CONFIG;
         const INITIAL_AUTH_TOKEN = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : FALLBACK_APP_ID;
+
         const ADVENT_DOC_PATH = (uid) => doc(db, 'artifacts', APP_ID, 'users', uid, 'advent_calendar', 'state');
         
         // Final phrase is now SYDNEY (6 characters)
@@ -326,18 +345,18 @@
         // --- Firebase Initialization and Auth ---
 
         async function initFirebase() {
-            try {
-                if (Object.keys(FIREBASE_CONFIG).length > 0) {
+            // Check if we have the necessary configuration to connect to Firebase
+            const isManualConfigValid = FIREBASE_CONFIG.projectId && FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY";
+
+            if (Object.keys(FIREBASE_CONFIG).length > 0 && isManualConfigValid) {
+                try {
                     const app = initializeApp(FIREBASE_CONFIG);
                     db = getFirestore(app);
                     auth = getAuth(app);
 
-                    // Sign in using the provided token or anonymously
-                    if (INITIAL_AUTH_TOKEN) {
-                        await signInWithCustomToken(auth, INITIAL_AUTH_TOKEN);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
+                    // Since we are running outside the Canvas, we must use anonymous sign-in
+                    // (The INITIAL_AUTH_TOKEN provided by the Canvas is only valid here)
+                    await signInAnonymously(auth);
                     
                     // Set up listener after successful sign-in
                     onAuthStateChanged(auth, (user) => {
@@ -347,20 +366,21 @@
                             isAuthReady = true;
                             startDataListening();
                         } else {
-                            console.error("Authentication failed.");
+                            console.error("Authentication failed after anonymous sign-in.");
                             document.getElementById('status-message').textContent = "Error: Could not authenticate user.";
                         }
                     });
 
-                } else {
-                    console.warn("Firebase config missing. Using local, non-persistent state.");
-                    document.getElementById('status-message').textContent = "Non-persistent Mode Active: Progress will be lost on refresh.";
-                    isAuthReady = true;
-                    renderCalendar(); // Render immediately in non-persistent mode
+                } catch (error) {
+                    console.error("Error initializing Firebase:", error);
+                    document.getElementById('status-message').textContent = `Error: Cannot connect to Firebase (Check Config). ${error.message}`;
                 }
-            } catch (error) {
-                console.error("Error initializing Firebase:", error);
-                document.getElementById('status-message').textContent = `Error during initialization: ${error.message}`;
+
+            } else {
+                console.warn("Firebase config missing. Using local, non-persistent state.");
+                document.getElementById('status-message').textContent = "Non-persistent Mode Active: Progress will be lost on refresh. (Insert your Firebase Config)";
+                isAuthReady = true;
+                renderCalendar(); // Render immediately in non-persistent mode
             }
         }
 
@@ -381,7 +401,7 @@
                     finalAnswerSubmitted = false;
                     setDoc(docRef, { unlockedDays: [], finalAnswerSubmitted: false }, { merge: true }).catch(e => console.error("Error setting initial doc:", e));
                 }
-                document.getElementById('status-message').textContent = `Tracking progress for user: ${userId.substring(0, 8)}...`;
+                document.getElementById('status-message').textContent = `Progress is **SAVED** (Tracking user: ${userId.substring(0, 8)}...)`;
                 renderCalendar();
             }, (error) => {
                 console.error("Error listening to Firestore:", error);
